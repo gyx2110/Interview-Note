@@ -278,8 +278,170 @@ public class NestedMonitorLockoutDemo {
 
 ### Java异步编程
 
+**异步任务批量执行CompletionService**
+尽管Future接口使得我们能够方便地异步任务的处理结果，但是如果一次性需要提交一批异步任务的话，仅使用Future写出来的代码将颇为繁琐。
+
+CompletionService在提交任务之后，会根据任务完成顺序来获取返回值，也就是谁先完成就返回谁的返回值。相当于Executor与BlockingQueue的融合体，Executor用于执行具体任务，BlockingQueue来保存线程的执行结果。
+
+默认是LinkedBlockingQueue
+
+```java
+public ExecutorCompletionService(Executor executor) {
+    if (executor == null)
+        throw new NullPointerException();
+    this.executor = executor;
+    this.aes = (executor instanceof AbstractExecutorService) ?
+        (AbstractExecutorService) executor : null;
+    this.completionQueue = new LinkedBlockingQueue<Future<V>>();
+}
+```
+也可以自己指定
+`public ExecutorCompletionService(Executor executor,BlockingQueue<Future<V>> completionQueue) {...}`
+获取返回值的方法调用
+completionService.take()，会阻塞
+completionService.poll()，不会阻塞
+调用的是阻塞队列的方法
+
+```java
+    public Future<V> take() throws InterruptedException {
+        return completionQueue.take();
+    }
+
+    public Future<V> poll() {
+        return completionQueue.poll();
+    }
+
+    public Future<V> poll(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return completionQueue.poll(timeout, unit);
+    }
+```
+
+一个例子：
+
+```java
+public class CompletionDemo {
+	public static void main(String[] args) throws InterruptedException, ExecutionException {
+		Random random = new Random();
+		Callable<String> callable = () -> {
+			int pause = (random.nextInt(4) + 1) * 1000;
+			Thread.sleep(pause);
+			return "sleep:" + pause;
+		};
+
+		// 新建一个线程池executor
+		ExecutorService executor = Executors.newCachedThreadPool();
+		// 用线程池executor新建一个CompletionService
+		CompletionService<String> completionService = new ExecutorCompletionService<String>(executor);
+		// 用CompletionService提交任务
+		for (int i = 0; i < 3; i++) {
+			completionService.submit(callable);
+		}
+		// 用CompletionService获取结果
+		System.out.println("任务提交完毕，开始获取结果 " + getStringDate());
+		for (int i = 0; i < 3; i++) {
+			System.out.println(completionService.take().get() + " " + getStringDate());
+		}
+		System.out.println("获取结果完毕 " + getStringDate());
+		executor.shutdown();
+	}
+
+	private static Date getStringDate() {
+		return new Date();
+	}
+```
+
+运行结果:
+
+![](assets/Snip20190701_22.png)
 
 
+
+**异步计算助手FutureTask**
+
+类继承结构：
+
+![img](assets/912007-20170221233407585-2009606359.png)
+Runable与Callable的比较
+Runable:
+优点:可以交给Thread或者线程池执行
+缺点:无法直接获取线程执行结果
+Callable:
+优点:可以直接获取线程执行结果
+缺点:只能交给线程池
+FutureTask融合了两者的优点，可以将一个Callable转换为Runable
+其构造函数：
+`public FutureTask(Callable<V> callable) {...}`
+FutureTask的例子：
+```java
+public class FutureTaskDemo {
+	public static void main(String[] args) {
+		// 第一种方式
+		Callable<Integer> callable = () -> {
+			System.out.println("子线程在进行计算");
+			Thread.sleep(3000);
+			int sum = 0;
+			for (int i = 0; i < 100; i++)
+				sum += i;
+			return sum;
+		};
+
+		ExecutorService executor = Executors.newCachedThreadPool();
+		FutureTask<Integer> futureTask = new FutureTask<Integer>(callable);
+		executor.submit(futureTask);
+		executor.shutdown();
+	
+		// 第二种方式，和第一种方式效果是类似的，使用的是Thread
+		// FutureTask<Integer> futureTask = new FutureTask<Integer>(callable);
+		// Thread thread = new Thread(futureTask);
+		// thread.start();
+	
+		System.out.println("主线程在执行任务");
+	
+		try {
+			System.out.println("task运行结果" + futureTask.get());
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+		}
+	
+		System.out.println("所有任务执行完毕");
+	}
+}
+
+public class FutureTaskDemo {
+	public static void main(String[] args) {
+		// 第一种方式
+		Callable<Integer> callable = () -> {
+			System.out.println("子线程在进行计算");
+			Thread.sleep(3000);
+			int sum = 0;
+			for (int i = 0; i < 100; i++)
+				sum += i;
+			return sum;
+		};
+
+		ExecutorService executor = Executors.newCachedThreadPool();
+		FutureTask<Integer> futureTask = new FutureTask<Integer>(callable);
+		executor.submit(futureTask);
+		executor.shutdown();
+	
+		// 第二种方式，和第一种方式效果是类似的，使用的是Thread
+		// FutureTask<Integer> futureTask = new FutureTask<Integer>(callable);
+		// Thread thread = new Thread(futureTask);
+		// thread.start();
+	
+		System.out.println("主线程在执行任务");
+	
+		try {
+			System.out.println("task运行结果" + futureTask.get());
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+		}
+	
+		System.out.println("所有任务执行完毕");
+	}
+}
+```
 ### Java多线程程序的性能调校
 
 Java从6-7对锁做的优化主要有
@@ -316,3 +478,7 @@ Java从6-7对锁做的优化主要有
 
 ![](assets/Snip20190630_12.png)
 
+
+```
+
+```
