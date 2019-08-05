@@ -24,7 +24,7 @@ JVM通过内存屏障保证了可见性与有序性
 
 说明：锁通过互斥来保证原子性
 
-可见性**
+**可见性**
 
 ![](assets/Snip20190623_4.png)
 ![](assets/Snip20190623_5.png)
@@ -141,6 +141,7 @@ public static void main(String[] args) throws InterruptedException {
 ### 保障线程安全的设计技术
 元空间：存储常量和类信息(静态变量，方法列表和方法的元数据信息)
 无状态对象：不含实例变量，且只包含只读的静态亦是 典型实例(Servlet)
+
 #### ThreadLocal
 Thread类的一个成员变量包含一个ThreadLocal.ThreadLocalMap
 `ThreadLocal.ThreadLocalMap inheritableThreadLocals = null;`
@@ -373,6 +374,7 @@ FutureTask融合了两者的优点，可以将一个Callable转换为Runable
 其构造函数：
 `public FutureTask(Callable<V> callable) {...}`
 FutureTask的例子：
+
 ```java
 public class FutureTaskDemo {
 	public static void main(String[] args) {
@@ -478,7 +480,3 @@ Java从6-7对锁做的优化主要有
 
 ![](assets/Snip20190630_12.png)
 
-
-```
-
-```

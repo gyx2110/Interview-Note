@@ -202,13 +202,14 @@ static int exclusiveCount(int c) { return c & EXCLUSIVE_MASK; }
 #### 写锁的获取与释放
 获取：
 WriteLock类提供了lock()方法获取写锁，写锁的获取最终会调用Sync类的tryAcquire(int)方法
+
 ```java
 protected final boolean tryAcquire(int acquires) {
 	Thread current = Thread.currentThread();
 	int c = getState();
 	int w = exclusiveCount(c);
 	if (c != 0) {
-		// 不能再获取写锁 写锁获取数为0 或者当前
+		// 不能再获取写锁 有读锁被获取，写锁获取数为0 或者当前
 		// 线程不是写锁的获取者时 都应该获取失败
 		if (w == 0 || current != getExclusiveOwnerThread())
 			return false;
